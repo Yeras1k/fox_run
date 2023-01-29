@@ -1,0 +1,235 @@
+[gd_scene load_steps=22 format=2]
+
+[ext_resource path="res://sprite/jump/player-jump-2.png" type="Texture" id=1]
+[ext_resource path="res://font/Font.tres" type="DynamicFont" id=2]
+[ext_resource path="res://sprite/run/player-run-2.png" type="Texture" id=3]
+[ext_resource path="res://sprite/run/player-run-6.png" type="Texture" id=4]
+[ext_resource path="res://sprite/jump/player-jump-1.png" type="Texture" id=5]
+[ext_resource path="res://sprite/run/player-run-5.png" type="Texture" id=6]
+[ext_resource path="res://sprite/run/player-run-4.png" type="Texture" id=7]
+[ext_resource path="res://sprite/idle/player-idle-4.png" type="Texture" id=8]
+[ext_resource path="res://sprite/idle/player-idle-1.png" type="Texture" id=9]
+[ext_resource path="res://sprite/idle/player-idle-3.png" type="Texture" id=10]
+[ext_resource path="res://sprite/run/player-run-3.png" type="Texture" id=11]
+[ext_resource path="res://sprite/idle/player-idle-2.png" type="Texture" id=12]
+[ext_resource path="res://sprite/run/player-run-1.png" type="Texture" id=13]
+[ext_resource path="res://sprite/hurt/player-hurt-1.png" type="Texture" id=14]
+[ext_resource path="res://sprite/hurt/player-hurt-2.png" type="Texture" id=15]
+[ext_resource path="res://sound/player_jump.tscn" type="PackedScene" id=16]
+[ext_resource path="res://sound/player_die.tscn" type="PackedScene" id=17]
+[ext_resource path="res://sound/gem_pickup.tscn" type="PackedScene" id=18]
+
+[sub_resource type="GDScript" id=4]
+script/source = "extends KinematicBody2D
+
+var n = 0
+var run_speed = 200
+var jump_speed = -140
+var gravity = 260
+var coins = 0
+var velocity = Vector2()
+onready var game_data = SaveFile.game_data
+
+func _ready():
+	position.x = game_data.position[0][0]
+	position.y = game_data.position[0][1]
+	coins = game_data.coins
+	get_tree().call_group(\"texting\", \"change\", coins)
+	
+func get_input():
+	velocity.x = 0
+	var right = Input.is_action_pressed('ui_d')
+	var left = Input.is_action_pressed('ui_a')
+	var jump = Input.is_action_just_pressed('ui_w')
+
+	if is_on_floor() and jump:
+		$player_jump.play()
+		velocity.y = jump_speed
+	if right:
+		velocity.x += run_speed
+		SaveFile.save_data()
+	if left:
+		velocity.x -= run_speed
+		SaveFile.save_data()
+
+	
+func _physics_process(delta):
+	velocity.y += gravity * delta
+	get_input()
+	velocity = move_and_slide(velocity, Vector2(0, -1), false, 4, 0.785, false)
+	animate()
+	for index in get_slide_count():
+		$die_r.force_raycast_update()
+		$die_l.force_raycast_update()
+		var collision = get_slide_collision(index)
+		if collision.collider.name.begins_with(\"enemy\") and not $ForEnemy.is_colliding():
+			$player_die.play()
+			n = 1
+			position.x = game_data.position[0][0]
+			position.y = game_data.position[0][1]
+			SaveFile.save_data()
+			var timer = Timer.new()
+			timer.connect(\"timeout\",self,\"change_stopper\",[0]) 
+			timer.wait_time = 1
+			timer.one_shot = true
+			add_child(timer)
+			timer.start()
+		if $die_r.is_colliding():
+			var collider1 = $die_r.get_collider()
+			if collider1.is_in_group(\"enemies\"):
+				$player_die.play()
+				n = 1
+				position.x = game_data.position[0][0]
+				position.y = game_data.position[0][1]
+				SaveFile.save_data()
+				var timer = Timer.new()
+				timer.connect(\"timeout\",self,\"change_stopper\",[0]) 
+				timer.wait_time = 1
+				timer.one_shot = true
+				add_child(timer)
+				timer.start()
+		if $die_l.is_colliding():
+			var collider2 = $die_l.get_collider()
+			if collider2.is_in_group(\"enemies\"):
+				$player_die.play()
+				n = 1
+				position.x = game_data.position[0][0]
+				position.y = game_data.position[0][1]
+				SaveFile.save_data()
+				var timer = Timer.new()
+				timer.connect(\"timeout\",self,\"change_stopper\",[0]) 
+				timer.wait_time = 1
+				timer.one_shot = true
+				add_child(timer)
+				timer.start()
+	pass
+	$ForEnemy.force_raycast_update()
+	if $ForEnemy.is_colliding():
+		var collider = $ForEnemy.get_collider()
+		if collider.is_in_group(\"enemies\"):
+			var enemy_name = \"%\" + collider.get_name()
+			velocity.y = -100
+			get_node(enemy_name).hide0()
+			game_data.coins += 5
+			SaveFile.save_data()
+			coins = game_data.coins
+			get_tree().call_group(\"texting\", \"change\", coins)
+
+func get_coin():
+	game_data.coins += 1
+	SaveFile.save_data()
+	coins = game_data.coins
+	$gem_pickup.play()
+	get_tree().call_group(\"texting\", \"change\", coins)
+	if coins == 18:
+		SaveFile.game_data = {
+			\"scene\": [\"res://scenes/Second.tscn\"],
+			\"is_two\": false,
+			\"position\": [[77, 223], [77, 223]],
+			\"enemy_position\": [[340, 170], [156, 73]],
+			\"coins\": 0,
+			\"enemy_is_dead\": []
+		}
+		SaveFile.save_data()
+		print(game_data)
+		get_tree().change_scene(game_data.scene[0])
+	
+func change_stopper(b):
+	n = b
+	
+func animate():
+	var anim = 'idle'
+	if n == 1:
+		anim = 'death'
+	else:
+		if velocity.y < 0 and not $RayCast2D.is_colliding():
+			anim = 'jump'
+		elif velocity.y > 0 and not $RayCast2D.is_colliding():
+			anim = 'fall'
+		else:
+			if velocity.x != 0:
+				anim = 'run'
+				if velocity.x > 0:
+					$Sprite.flip_h = false
+				else:
+					$Sprite.flip_h = true
+	if $Sprite.animation != anim:
+		$Sprite.play(anim)
+"
+
+[sub_resource type="SpriteFrames" id=3]
+animations = [ {
+"frames": [ ExtResource( 14 ), ExtResource( 15 ) ],
+"loop": false,
+"name": "death",
+"speed": 2.0
+}, {
+"frames": [ ExtResource( 1 ) ],
+"loop": true,
+"name": "fall",
+"speed": 5.0
+}, {
+"frames": [ ExtResource( 9 ), ExtResource( 12 ), ExtResource( 10 ), ExtResource( 8 ) ],
+"loop": true,
+"name": "idle",
+"speed": 5.0
+}, {
+"frames": [ ExtResource( 5 ) ],
+"loop": false,
+"name": "jump",
+"speed": 0.0
+}, {
+"frames": [ ExtResource( 13 ), ExtResource( 3 ), ExtResource( 11 ), ExtResource( 7 ), ExtResource( 6 ), ExtResource( 4 ) ],
+"loop": true,
+"name": "run",
+"speed": 5.0
+} ]
+
+[sub_resource type="RectangleShape2D" id=2]
+extents = Vector2( 7, 10 )
+
+[node name="player" type="KinematicBody2D" groups=["players"]]
+collision_mask = 0
+script = SubResource( 4 )
+
+[node name="Sprite" type="AnimatedSprite" parent="."]
+frames = SubResource( 3 )
+animation = "death"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2( 0, 6 )
+shape = SubResource( 2 )
+one_way_collision = true
+
+[node name="RayCast2D" type="RayCast2D" parent="."]
+position = Vector2( 0, 12 )
+enabled = true
+cast_to = Vector2( 0, 24 )
+
+[node name="ForEnemy" type="RayCast2D" parent="."]
+scale = Vector2( 2.3, 1.05 )
+cast_to = Vector2( 0, 20 )
+
+[node name="die_r" type="RayCast2D" parent="."]
+position = Vector2( 0, 6 )
+cast_to = Vector2( 12, 0 )
+
+[node name="die_l" type="RayCast2D" parent="."]
+position = Vector2( 0, 6 )
+cast_to = Vector2( -12, 0 )
+
+[node name="player_jump" parent="." instance=ExtResource( 16 )]
+
+[node name="player_die" parent="." instance=ExtResource( 17 )]
+
+[node name="gem_pickup" parent="." instance=ExtResource( 18 )]
+
+[node name="Label" type="Label" parent="."]
+margin_left = -14.0
+margin_top = -28.0
+margin_right = 16.0
+margin_bottom = -8.0
+custom_colors/font_color = Color( 0, 1, 0, 1 )
+custom_fonts/font = ExtResource( 2 )
+text = "P1"
+align = 1

@@ -1,0 +1,98 @@
+[gd_scene load_steps=22 format=2]
+
+[ext_resource path="res://sprite/jump/player-jump-2.png" type="Texture" id=1]
+[ext_resource path="res://sprite/player/player2.gd" type="Script" id=2]
+[ext_resource path="res://sprite/run/player-run-2.png" type="Texture" id=3]
+[ext_resource path="res://sprite/run/player-run-6.png" type="Texture" id=4]
+[ext_resource path="res://sprite/jump/player-jump-1.png" type="Texture" id=5]
+[ext_resource path="res://sprite/run/player-run-5.png" type="Texture" id=6]
+[ext_resource path="res://sprite/run/player-run-4.png" type="Texture" id=7]
+[ext_resource path="res://sprite/idle/player-idle-4.png" type="Texture" id=8]
+[ext_resource path="res://sprite/idle/player-idle-1.png" type="Texture" id=9]
+[ext_resource path="res://sprite/idle/player-idle-3.png" type="Texture" id=10]
+[ext_resource path="res://sprite/run/player-run-3.png" type="Texture" id=11]
+[ext_resource path="res://sprite/idle/player-idle-2.png" type="Texture" id=12]
+[ext_resource path="res://sprite/run/player-run-1.png" type="Texture" id=13]
+[ext_resource path="res://sprite/hurt/player-hurt-1.png" type="Texture" id=14]
+[ext_resource path="res://sprite/hurt/player-hurt-2.png" type="Texture" id=15]
+[ext_resource path="res://sound/player_jump.tscn" type="PackedScene" id=16]
+[ext_resource path="res://sound/player_die.tscn" type="PackedScene" id=17]
+[ext_resource path="res://sound/gem_pickup.tscn" type="PackedScene" id=18]
+[ext_resource path="res://font/Font.tres" type="DynamicFont" id=19]
+
+[sub_resource type="SpriteFrames" id=3]
+animations = [ {
+"frames": [ ExtResource( 14 ), ExtResource( 15 ) ],
+"loop": false,
+"name": "death",
+"speed": 2.0
+}, {
+"frames": [ ExtResource( 1 ) ],
+"loop": true,
+"name": "fall",
+"speed": 5.0
+}, {
+"frames": [ ExtResource( 9 ), ExtResource( 12 ), ExtResource( 12 ), ExtResource( 10 ), ExtResource( 8 ) ],
+"loop": true,
+"name": "idle",
+"speed": 5.0
+}, {
+"frames": [ ExtResource( 5 ) ],
+"loop": false,
+"name": "jump",
+"speed": 0.0
+}, {
+"frames": [ ExtResource( 13 ), ExtResource( 3 ), ExtResource( 11 ), ExtResource( 7 ), ExtResource( 6 ), ExtResource( 4 ) ],
+"loop": true,
+"name": "run",
+"speed": 5.0
+} ]
+
+[sub_resource type="RectangleShape2D" id=2]
+extents = Vector2( 7, 10 )
+
+[node name="player2" type="KinematicBody2D" groups=["players"]]
+collision_mask = 0
+script = ExtResource( 2 )
+
+[node name="Sprite" type="AnimatedSprite" parent="."]
+frames = SubResource( 3 )
+animation = "death"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2( 0, 6 )
+shape = SubResource( 2 )
+one_way_collision = true
+
+[node name="RayCast2D" type="RayCast2D" parent="."]
+position = Vector2( 0, 12 )
+enabled = true
+cast_to = Vector2( 0, 24 )
+
+[node name="ForEnemy" type="RayCast2D" parent="."]
+scale = Vector2( 2.3, 1.05 )
+cast_to = Vector2( 0, 20 )
+
+[node name="die_r" type="RayCast2D" parent="."]
+position = Vector2( 0, 6 )
+cast_to = Vector2( 12, 0 )
+
+[node name="die_l" type="RayCast2D" parent="."]
+position = Vector2( 0, 6 )
+cast_to = Vector2( -12, 0 )
+
+[node name="player_jump" parent="." instance=ExtResource( 16 )]
+
+[node name="player_die" parent="." instance=ExtResource( 17 )]
+
+[node name="gem_pickup" parent="." instance=ExtResource( 18 )]
+
+[node name="Label" type="Label" parent="."]
+margin_left = -14.0
+margin_top = -28.0
+margin_right = 16.0
+margin_bottom = -8.0
+custom_colors/font_color = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 19 )
+text = "P2"
+align = 1

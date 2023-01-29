@@ -1,0 +1,1 @@
+"# fox_run"  initgit add README.mdgit commit -m "first commit"git branch -M maingit remote add origin https://github.com/Yeras1k/fox_run.gitgit push -u origin main
